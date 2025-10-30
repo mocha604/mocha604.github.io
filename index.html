@@ -1,0 +1,1994 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智瞰绿城—智能体深度集成的无人机航拍城市绿化覆盖智能检测系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
+    <!-- 百度地图 API (请确保该 AK 为你在百度地图开发平台申请的有效 AK) -->
+    <script>
+        // 全局 BAIDU_MAP_AK 变量，页面其他脚本可以使用此值
+        window.BAIDU_MAP_AK = 'mGAFAdxOhSTsHakJYL9AiYDOimJWH62V';
+    </script>
+    <script src="https://api.map.baidu.com/api?v=3.0&ak=mGAFAdxOhSTsHakJYL9AiYDOimJWH62V"></script>
+    <style>
+        :root {
+            --primary-color: #165DFF;
+            --success-color: #00B96B;
+            --warning-color: #FF7D00;
+            --danger-color: #F53F3F;
+            --light-bg: #f8f9fa;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #1d2129;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.4rem;
+        }
+        
+        .section-card {
+            margin: 1.5rem 0;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border-radius: 12px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .section-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+        
+        .card-header {
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            background-color: var(--light-bg);
+            border-radius: 12px 12px 0 0 !important;
+            padding: 1rem 1.5rem;
+        }
+        
+        .card-title {
+            font-weight: 600;
+            color: #1d2129;
+            margin-bottom: 0;
+        }
+        
+        .role-tab { 
+            margin-bottom: 1rem; 
+        }
+        
+        .gov-only { 
+            display: none; 
+        }
+        
+        .alert-broadcast {
+            background-color: #e8f4f8;
+            border-color: #b3d9e8;
+            color: #0c5460;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+        }
+        
+        .tree-card {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .tree-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(22, 93, 255, 0.1);
+        }
+        
+        .gushu-tag {
+            background-color: #ffeeba;
+            color: #856404;
+            padding: 0.3rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        .map-container {
+            width: 100%;
+            height: 350px;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+            position: relative;
+            background-color: #f0f2f5;
+        }
+        
+        .map-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .map-tip {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255,255,255,0.9);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .map-label {
+            position: absolute;
+            padding: 4px 8px;
+            background: rgba(22, 93, 255, 0.8);
+            color: white;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            z-index: 5;
+        }
+        
+        .map-label-high {
+            background: rgba(245, 63, 63, 0.8);
+        }
+        
+        .data-interpret {
+            color: #6c757d;
+            font-size: 0.85rem;
+            margin-top: 0.75rem;
+            line-height: 1.5;
+        }
+        
+        .project-item {
+            border-left: 4px solid var(--primary-color);
+            padding-left: 1.25rem;
+            margin-bottom: 1rem;
+        }
+        
+        .faq-item {
+            margin-bottom: 1.25rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 1rem;
+        }
+        
+        .faq-item:last-child {
+            border-bottom: none;
+        }
+        
+        .faq-answer {
+            display: none;
+            padding-left: 1rem;
+            color: #6c757d;
+            margin-top: 0.75rem;
+            line-height: 1.6;
+        }
+        
+        .chart-container {
+            width: 100%;
+            height: 250px;
+        }
+
+        /* 政企视角图表居中与响应式限制 */
+        #greenTypeChart, #budgetChart, #fundSourceChart {
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            padding: 1.25rem;
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0.5rem 0;
+        }
+        
+        .metric-trend {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .trend-up {
+            color: var(--success-color);
+        }
+        
+        .trend-down {
+            color: var(--danger-color);
+        }
+        
+        .tech-spec-card {
+            background: white;
+            border-radius: 10px;
+            padding: 1.25rem;
+            height: 100%;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .tech-spec-title {
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: #1d2129;
+        }
+        
+        .tech-spec-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .tech-spec-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .tech-spec-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .floating-tech-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        footer {
+            background: linear-gradient(135deg, #1d2129 0%, #343a40 100%);
+            color: #adb5bd;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+        
+        .query-options {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .query-option {
+            margin-bottom: 0.75rem;
+        }
+        
+        .query-option:last-child {
+            margin-bottom: 0;
+        }
+        
+        .plant-category {
+            margin-bottom: 1.5rem;
+        }
+        
+        .plant-category h6 {
+            color: var(--primary-color);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .plant-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .plant-tag {
+            background-color: white;
+            border: 1px solid #e9ecef;
+            border-radius: 20px;
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .plant-tag:hover {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .gov-exclusive {
+            border-left: 4px solid var(--primary-color);
+            background-color: rgba(22, 93, 255, 0.05);
+        }
+        
+        .gov-feature-badge {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            margin-left: 0.5rem;
+        }
+        
+        /* 无人机采集流程样式 */
+        .tech-flow {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .flow-step {
+            text-align: center;
+            width: 30%;
+        }
+        
+        .flow-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 0.75rem;
+            border-radius: 50%;
+            background-color: rgba(22, 93, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+        
+        .flow-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .flow-desc {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+        
+        .flow-arrow {
+            color: #ced4da;
+            font-size: 1.5rem;
+        }
+        
+        /* 项目时间线样式 */
+        .project-timeline {
+            position: relative;
+            margin: 2rem 0;
+            padding-left: 2rem;
+        }
+        
+        .timeline-line {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: #e9ecef;
+        }
+        
+        .timeline-node {
+            position: relative;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px dashed #e9ecef;
+        }
+        
+        .timeline-node:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .node-dot {
+            position: absolute;
+            left: -2.5rem;
+            top: 0;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            z-index: 2;
+        }
+        
+        .node-dot-current {
+            background-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(22, 93, 255, 0.2);
+        }
+        
+        .node-dot-future {
+            background-color: var(--success-color);
+        }
+        
+        .node-dot-next {
+            background-color: var(--warning-color);
+        }
+        
+        .node-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        
+        .node-year {
+            font-weight: 700;
+            color: #1d2129;
+        }
+        
+        .node-status {
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .status-current {
+            background-color: rgba(22, 93, 255, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .status-future {
+            background-color: rgba(0, 185, 107, 0.1);
+            color: var(--success-color);
+        }
+        
+        .node-content {
+            margin-bottom: 0.75rem;
+        }
+        
+        .node-tech {
+            font-size: 0.85rem;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 200px;
+            }
+            
+            .map-container {
+                height: 250px;
+            }
+            
+            .metric-value {
+                font-size: 1.75rem;
+            }
+            
+            .section-card {
+                margin: 1rem 0;
+            }
+            
+            .floating-tech-btn {
+                bottom: 20px;
+                right: 20px;
+                width: 50px;
+                height: 50px;
+                font-size: 1.25rem;
+            }
+            
+            .plant-list {
+                gap: 0.3rem;
+            }
+            
+            .plant-tag {
+                padding: 0.3rem 0.6rem;
+                font-size: 0.8rem;
+            }
+            
+            /* 适配移动端流程样式 */
+            .tech-flow {
+                flex-direction: column;
+                padding: 1rem;
+            }
+            
+            .flow-step {
+                width: 100%;
+                margin-bottom: 1.5rem;
+            }
+            
+            .flow-step:last-child {
+                margin-bottom: 0;
+            }
+            
+            .flow-arrow {
+                transform: rotate(90deg);
+                margin: 0.5rem 0;
+            }
+            
+            /* 适配移动端时间线 */
+            .project-timeline {
+                padding-left: 1.5rem;
+            }
+            
+            .node-dot {
+                left: -1.75rem;
+            }
+        }
+        /* 移动端覆盖：让政企图表占满宽度 */
+        @media (max-width: 768px) {
+            #greenTypeChart, #budgetChart, #fundSourceChart {
+                max-width: 100%;
+                padding: 0 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <span>智瞰绿城</span>
+                <small class="text-light opacity-80 d-none d-md-inline">智能体深度集成的无人机航拍城市绿化覆盖智能检测系统</small>
+            </a>
+            <div class="ms-auto">
+                <!-- 修复：明确btn-group的role切换逻辑，增加active类初始状态控制 -->
+                <div class="btn-group" id="roleSwitch">
+                    <button class="btn btn-light active" id="publicRoleBtn" data-role="public">公众视角</button>
+                    <button class="btn btn-light" id="govRoleBtn" data-role="gov">政企视角</button>
+                </div>
+                <button class="btn btn-outline-light ms-2" id="govLoginBtn" data-bs-toggle="modal" data-bs-target="#loginModal" style="display: none;">
+                    政企登录
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 政企登录模态框 -->
+    <div class="modal fade" id="loginModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">政企用户登录</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">单位账号</label>
+                        <input type="text" class="form-control" id="govAccount" placeholder="请输入单位账号（示例：qdcsglj）">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">密码</label>
+                        <input type="password" class="form-control" id="govPwd" placeholder="请输入密码（默认：123456）">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="doLogin">登录</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 技术科普弹窗 -->
+    <div class="modal fade" id="techModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">核心技术详解（基于项目文档）</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="tech-spec-card">
+                                <h6 class="tech-spec-title">3D-CNN深度学习模型</h6>
+                                <ul class="tech-spec-list">
+                                    <li><strong>准确率：</strong>92%+（文档3.3技术优势）</li>
+                                    <li><strong>处理速度：</strong>0.5秒/图像</li>
+                                    <li><strong>训练数据量：</strong>10万+标注图像</li>
+                                    <li><strong>特征维度：</strong>光谱+纹理+空间三维</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="tech-spec-card">
+                                <h6 class="tech-spec-title">双时相遥感检测（专利技术）</h6>
+                                <ul class="tech-spec-list">
+                                    <li><strong>专利号：</strong>CN 114494870 A（文档图3-3）</li>
+                                    <li><strong>时间精度：</strong>±1天</li>
+                                    <li><strong>变化检测：</strong>枯萎率、新生植被识别</li>
+                                    <li><strong>更新频率：</strong>每周自动巡检</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="tech-spec-card">
+                                <h6 class="tech-spec-title">多源数据融合</h6>
+                                <ul class="tech-spec-list">
+                                    <li><strong>数据源：</strong>无人机RGB+多光谱+激光雷达</li>
+                                    <li><strong>融合算法：</strong>特征级融合+决策级融合</li>
+                                    <li><strong>抗干扰能力：</strong>减少环境因素影响85%</li>
+                                    <li><strong>应用价值：</strong>提升树种识别鲁棒性（文档3.3）</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 顶部 Banner 图和口号 -->
+    <div style="width:100%;height:260px;position:relative;overflow:hidden;margin-bottom:2rem;">
+        <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80" alt="无人机航拍城市绿化" style="width:100%;height:100%;object-fit:cover;filter:brightness(0.85);">
+        <div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;">
+            <h1 style="color:#fff;font-size:2.2rem;font-weight:700;text-shadow:0 2px 8px rgba(0,0,0,0.3);margin-bottom:0.5rem;">智瞰绿城</h1>
+            <h3 style="color:#fff;font-size:1.2rem;font-weight:400;text-shadow:0 2px 8px rgba(0,0,0,0.2);">智能体深度集成的无人机航拍城市绿化覆盖智能检测系统</h3>
+            <span style="background:rgba(22,93,255,0.8);color:#fff;padding:0.4rem 1.2rem;border-radius:20px;font-size:1rem;margin-top:1rem;">让科技守护城市绿色生态</span>
+        </div>
+    </div>
+
+    <div class="container py-4">
+        <!-- 城市绿化总览 -->
+        <div class="card section-card" style="border-top:6px solid #165DFF;">
+            <div class="card-header d-flex align-items-center" style="background:linear-gradient(90deg,#165DFF 0%,#00B96B 100%);color:#fff;">
+                <i class="bi bi-drone" style="font-size:1.8rem;margin-right:1rem;"></i>
+                <h5 class="card-title mb-0">智瞰绿城—智能体深度集成的无人机航拍城市绿化覆盖智能检测系统</h5>
+            </div>
+            <div class="mt-2 mb-0 text-muted" style="font-size:1.1rem;">
+                <strong>核心技术亮点：</strong>
+                <ul style="margin-bottom:0;">
+                    <li>智能体深度集成：多智能体协同作业，实现大范围城市绿化高效巡检</li>
+                    <li>无人机航拍：采用高分辨率多光谱无人机，单次飞行覆盖50km²，分辨率0.1米/像素</li>
+                    <li>自动路径规划与数据回传：支持自动航线生成、实时数据回传与云端处理</li>
+                    <li>3D-CNN深度学习识别：精准识别树种、健康状态与病虫害，识别准确率92%+</li>
+                    <li>多源数据融合：集成RGB、激光雷达与多光谱数据，提升识别鲁棒性</li>
+                </ul>
+            </div>
+        <!-- 设备介绍区 -->
+        <div class="card section-card" style="border-top:6px solid #00B96B;">
+            <div class="card-header d-flex align-items-center" style="background:linear-gradient(90deg,#00B96B 0%,#165DFF 100%);color:#fff;">
+                <i class="bi bi-gear" style="font-size:1.6rem;margin-right:1rem;"></i>
+                <h5 class="card-title mb-0">无人机设备介绍</h5>
+            </div>
+            <div class="card-body d-flex flex-wrap align-items-center">
+                                <div style="background:linear-gradient(135deg,#e0f7fa 0%,#e3f0ff 100%);border-radius:16px;box-shadow:0 4px 16px rgba(22,93,255,0.08);padding:1.5rem 1rem 1rem 1rem;display:flex;align-items:center;gap:2rem;min-height:160px;">
+                                    <img src="https://github.com/mocha604/my-images/blob/main/DJI_Phantom_4_Pro.jpg?raw=true" alt="DJI Phantom 4 Pro 无人机" style="width:220px;height:140px;object-fit:cover;border-radius:12px;box-shadow:0 4px 16px rgba(22,93,255,0.12);border:4px solid #fff;">
+                                    <ul style="margin:0;padding-left:1rem;list-style:disc inside;font-size:1.08rem;color:#1d2129;">
+    <li><strong>核心特点：</strong>高空航拍（广角视野+高分辨率）、数据多样性（静态/动态/连续帧）、实时传输存储（云端备份）、灵活易用（快速部署+参数可调）</li>
+                                        <li><strong>型号：</strong> DJI Phantom 4 Pro（示例）</li>
+                                        <li><strong>传感器：</strong> RGB高清摄像头 + 多光谱传感器 + 激光雷达</li>
+                                        <li><strong>飞行时间：</strong> 单次续航30分钟，自动返航</li>
+                                        <li><strong>覆盖范围：</strong> 单次飞行覆盖50km²，分辨率0.1米/像素</li>
+                                        <li><strong>数据回传：</strong> 实时回传至云端，支持离线存储</li>
+                                        <li><strong>应用场景：</strong> 城市绿化巡检、病虫害监测、古树名木普查</li>
+                                    </ul>
+                                </div>
+            </div>
+        </div>
+            </div>
+            <div class="card-body">
+                <div class="faq-item">
+                <div class="faq-item">
+                    <h6 class="fw-bold"><i class="bi bi-chevron-right text-primary"></i> 3D-CNN模型原理与技术细节</h6>
+                    <div class="faq-answer">
+                        <img src="https://github.com/mocha604/my-images/blob/main/%E5%BE%AE%E4%BF%A1%E5%9B%BE%E7%89%87_20251030142759_99_1.png?raw=true" alt="3D-CNN模型图" style="max-width:320px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.12);margin-bottom:10px;">
+                        <div style="font-size:1rem;line-height:1.7;">
+                            <strong>模型结构：</strong>3D-CNN+Transformer混合模型，通过增量学习每新增1万张图像自动更新，识别准确率&lt;90%时触发报警。<br>
+                            <strong>专利信息：</strong>双时相遥感检测（专利号：CN 114494870 A），提升小尺寸绿化变化区域检测能力。<br>
+                            <strong>软著信息：</strong>机器视觉检测（软著登字第8615580号），基于机器视觉的智能制造产品表面缺陷检测系统，技术合规性强。
+                        </div>
+                    </div>
+                </div>
+                    <h6 class="fw-bold"><i class="bi bi-chevron-right text-primary"></i> 项目如何保证数据采集准确性？</h6>
+                    <div class="faq-answer">
+                        通过多源数据融合（地理位置+光谱+空间分布）、3D-CNN模型增量训练（每1万张图像更新）、智能体自动校验数据完整性（缺失区域补飞）。
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <h6 class="fw-bold"><i class="bi bi-chevron-right text-primary"></i> 普通用户能否参与树木数据标注？</h6>
+                    <div class="faq-answer">
+                        可通过公众反馈小程序拍照上传树木问题，智能体自动分类后推送至对应部门，无需专业标注技能。
+                    </div>
+                </div>
+                <div class="alert alert-broadcast mb-4" role="alert">
+                    <marquee behavior="scroll" direction="left">
+                        【数据更新】全市绿化覆盖率38.5%（较上月+0.3%） | 无病虫害区域占比93% | 本周完成15棵古树养护（含泰山椴3棵） | 历城区防护绿地健康率89%
+                    </marquee>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="metric-card">
+                            <h6 class="card-subtitle text-muted">全市绿化覆盖率</h6>
+                            <div class="metric-value">38.5%</div>
+                            <p class="metric-trend trend-up"><i class="bi bi-arrow-up"></i> 较上月+0.3%</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card">
+                            <h6 class="card-subtitle text-muted">树木总量</h6>
+                            <div class="metric-value">13.2万棵</div>
+                            <p class="metric-trend trend-up"><i class="bi bi-arrow-up"></i> 较去年+6.1%</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card">
+                            <h6 class="card-subtitle text-muted">古树名木数量</h6>
+                            <div class="metric-value">165棵</div>
+                            <p class="text-muted">含山东特有种（泰山椴）35棵（文档图3-8）</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card">
+                            <h6 class="card-subtitle text-muted">病虫害树木占比</h6>
+                            <div class="metric-value">7.2%</div>
+                            <p class="metric-trend trend-down"><i class="bi bi-arrow-down"></i> 较上月-1.2%</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 新增：无人机采集流程可视化（文档3.2.1核心设备） -->
+                <div class="tech-flow">
+                    <div class="flow-step">
+                        <div class="flow-icon">
+                            <i class="bi bi-drone"></i>
+                        </div>
+                        <div class="flow-title">无人机航拍</div>
+                        <div class="flow-desc">单次飞行覆盖10个社区，采集时间＜2小时，分辨率0.1m/像素（文档3.2.1）</div>
+                    </div>
+                    <div class="flow-arrow">
+                        <i class="bi bi-arrow-right"></i>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-icon">
+                            <i class="bi bi-cloud-arrow-up"></i>
+                        </div>
+                        <div class="flow-title">云端数据处理</div>
+                        <div class="flow-desc">3D-CNN模型实时分析，多源数据融合，识别准确率92%+（文档3.3）</div>
+                    </div>
+                    <div class="flow-arrow">
+                        <i class="bi bi-arrow-right"></i>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-icon">
+                            <i class="bi bi-chart-pie"></i>
+                        </div>
+                        <div class="flow-title">可视化输出</div>
+                        <div class="flow-desc">生成绿化报表/密度地图，每周自动更新数据（文档2项目简介）</div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">近1年绿化覆盖率变化 (2024年9月-2025年9月)</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="coverageChart" class="chart-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">主要树种占比（含山东特有种）</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="treeTypeChart" class="chart-container"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">区域绿化密度分布（无人机航拍实时数据）</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="map-container" style="height:350px; padding:0;">
+                                    <!-- 交互式百度地图容器（已使用页面 head 中的 BAIDU_MAP_AK 加载 SDK） -->
+                                    <div id="baiduMapCoverage" style="width:100%; height:100%;"></div>
+                                    <div class="map-tip">提示：点击标注查看泰山椴示例分布（示例数据，实际请接入后端 GIS 数据）</div>
+                                </div>
+                                <p class="data-interpret">
+                                    数据说明：① 红色标注=高密绿化区（绿地率≥40%，含泰山椴主要分布区：泰安泰山中天门、青岛黄岛大珠山）；② 蓝色标注=达标绿化区（25%-40%）；③ 数据来源：无人机航拍+3D-CNN识别，采集设备为"无人机+多光谱摄像头"（文档3.2.1），每周自动巡检更新。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 公众查询工具 -->
+        <div class="card section-card">
+            <div class="card-header">
+                <h5 class="card-title">公众查询工具</h5>
+            </div>
+            <div class="card-body">
+                <div class="query-options">
+                    <h6 class="mb-3">查询选项</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="query-option">
+                                <label class="form-label">查询类型</label>
+                                <select class="form-select" id="queryType">
+                                    <option value="tree">按树种查询</option>
+                                    <option value="area">按区域查询</option>
+                                    <option value="health">按健康状态查询</option>
+                                    <option value="age">按树龄查询</option>
+                                    <option value="protection">按保护级别查询</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="query-option">
+                                <label class="form-label">查询条件</label>
+                                <input type="text" class="form-control" id="queryInput" placeholder="输入查询内容（如：泰山椴）">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="query-option">
+                                <label class="form-label">&nbsp;</label>
+                                <button class="btn btn-primary w-100" id="treeQueryBtn">查询</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 植物种类标签（含文档中提及的树种） -->
+                <div class="plant-category">
+                    <h6>乔木类（文档树木数据库）</h6>
+                    <div class="plant-list">
+                        <span class="plant-tag" data-plant="泰山椴">泰山椴（山东特有）</span>
+                        <span class="plant-tag" data-plant="紫玉兰">紫玉兰</span>
+                        <span class="plant-tag" data-plant="紫檀">紫檀</span>
+                        <span class="plant-tag" data-plant="铁力木">铁力木</span>
+                        <span class="plant-tag" data-plant="马尾松">马尾松</span>
+                        <span class="plant-tag" data-plant="柳杉">柳杉</span>
+                        <span class="plant-tag" data-plant="灯台树">灯台树（病虫害高发）</span>
+                        <span class="plant-tag" data-plant="银杏">银杏</span>
+                        <span class="plant-tag" data-plant="国槐">国槐</span>
+                        <span class="plant-tag" data-plant="法桐">法桐</span>
+                    </div>
+                </div>
+                
+                <div class="plant-category">
+                    <h6>灌木类</h6>
+                    <div class="plant-list">
+                        <span class="plant-tag" data-plant="杜鹃">杜鹃</span>
+                        <span class="plant-tag" data-plant="黄杨">黄杨</span>
+                        <span class="plant-tag" data-plant="月季">月季</span>
+                        <span class="plant-tag" data-plant="紫薇">紫薇</span>
+                        <span class="plant-tag" data-plant="连翘">连翘</span>
+                        <span class="plant-tag" data-plant="海棠">海棠</span>
+                        <span class="plant-tag" data-plant="樱花">樱花</span>
+                        <span class="plant-tag" data-plant="丁香">丁香</span>
+                    </div>
+                </div>
+                
+                <div class="plant-category">
+                    <h6>经济作物类</h6>
+                    <div class="plant-list">
+                        <span class="plant-tag" data-plant="梨树">梨树</span>
+                        <span class="plant-tag" data-plant="苹果树">苹果树</span>
+                        <span class="plant-tag" data-plant="桃树">桃树</span>
+                        <span class="plant-tag" data-plant="枣树">枣树</span>
+                        <span class="plant-tag" data-plant="核桃树">核桃树</span>
+                        <span class="plant-tag" data-plant="柿子树">柿子树</span>
+                    </div>
+                </div>
+                
+                <div class="plant-category">
+                    <h6>观赏植物类</h6>
+                    <div class="plant-list">
+                        <span class="plant-tag" data-plant="牡丹">牡丹</span>
+                        <span class="plant-tag" data-plant="芍药">芍药</span>
+                        <span class="plant-tag" data-plant="菊花">菊花</span>
+                        <span class="plant-tag" data-plant="梅花">梅花</span>
+                        <span class="plant-tag" data-plant="兰花">兰花</span>
+                        <span class="plant-tag" data-plant="荷花">荷花</span>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <button class="btn btn-outline-primary w-100" id="scanTreeBtn">
+                            <i class="bi bi-qr-code-scan"></i> 扫描树木电子标签
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-outline-success w-100" id="advancedSearchBtn" data-bs-toggle="modal" data-bs-target="#advancedSearchModal">
+                            <i class="bi bi-search"></i> 高级搜索
+                        </button>
+                    </div>
+                </div>
+
+                <div id="treeQueryResult" class="d-none">
+                    <!-- 查询结果将在这里显示 -->
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">古树名木分布（含山东特有种）</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="map-container" style="height:350px; padding:0;">
+                            <!-- 古树名木交互地图容器 -->
+                            <div id="baiduMapAncient" style="width:100%; height:100%;"></div>
+                            <div class="map-tip">提示：点击标注查看古树名木信息（示例数据）</div>
+                        </div>
+                        <p class="data-interpret">
+                            数据说明：现有165棵古树名木，其中山东特有种"泰山椴"35棵（主要分布于泰安泰山中天门、青岛黄岛大珠山），受旅游开发影响较大（生境破坏、幼树放牧干扰），已纳入季度养护计划（2025年4月完成土壤改良，下次养护7月）（文档3.8）。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 高级搜索模态框 -->
+        <div class="modal fade" id="advancedSearchModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">高级搜索</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">植物种类</label>
+                                    <select class="form-select" id="advTreeType">
+                                        <option value="">选择植物种类</option>
+                                        <optgroup label="乔木类（文档提及）">
+                                            <option value="泰山椴">泰山椴（山东特有）</option>
+                                            <option value="紫玉兰">紫玉兰</option>
+                                            <option value="紫檀">紫檀</option>
+                                            <option value="铁力木">铁力木</option>
+                                            <option value="马尾松">马尾松</option>
+                                            <option value="柳杉">柳杉</option>
+                                            <option value="灯台树">灯台树（病虫害高发）</option>
+                                            <option value="银杏">银杏</option>
+                                            <option value="国槐">国槐</option>
+                                            <option value="法桐">法桐</option>
+                                        </optgroup>
+                                        <optgroup label="灌木类">
+                                            <option value="杜鹃">杜鹃</option>
+                                            <option value="黄杨">黄杨</option>
+                                            <option value="月季">月季</option>
+                                            <option value="紫薇">紫薇</option>
+                                            <option value="连翘">连翘</option>
+                                            <option value="海棠">海棠</option>
+                                            <option value="樱花">樱花</option>
+                                            <option value="丁香">丁香</option>
+                                        </optgroup>
+                                        <optgroup label="经济作物类">
+                                            <option value="梨树">梨树</option>
+                                            <option value="苹果树">苹果树</option>
+                                            <option value="桃树">桃树</option>
+                                            <option value="枣树">枣树</option>
+                                            <option value="核桃树">核桃树</option>
+                                            <option value="柿子树">柿子树</option>
+                                        </optgroup>
+                                        <optgroup label="观赏植物类">
+                                            <option value="牡丹">牡丹</option>
+                                            <option value="芍药">芍药</option>
+                                            <option value="菊花">菊花</option>
+                                            <option value="梅花">梅花</option>
+                                            <option value="兰花">兰花</option>
+                                            <option value="荷花">荷花</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">区域</label>
+                                    <select class="form-select" id="advArea">
+                                        <option value="">选择区域</option>
+                                        <option value="泰安">泰安（泰山椴核心区）</option>
+                                        <option value="青岛">青岛（黄岛泰山椴分布区）</option>
+                                        <option value="济南">济南</option>
+                                        <option value="淄博">淄博</option>
+                                        <option value="烟台">烟台</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">健康状态</label>
+                                    <select class="form-select" id="advHealth">
+                                        <option value="">选择健康状态</option>
+                                        <option value="健康">健康</option>
+                                        <option value="轻微病害">轻微病害</option>
+                                        <option value="中度病害">中度病害</option>
+                                        <option value="严重病害">严重病害</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">保护级别</label>
+                                    <select class="form-select" id="advProtection">
+                                        <option value="">选择保护级别</option>
+                                        <option value="国家一级">国家一级</option>
+                                        <option value="国家二级">国家二级</option>
+                                        <option value="省级">省级</option>
+                                        <option value="市级">市级</option>
+                                        <option value="无">无</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">最小树龄</label>
+                                    <input type="number" class="form-control" id="advMinAge" placeholder="最小树龄（年）">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">最大树龄</label>
+                                    <input type="number" class="form-control" id="advMaxAge" placeholder="最大树龄（年）">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-primary" id="doAdvancedSearch">搜索</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 季度绿化项目 + 新增项目时间线（文档6.1阶段规划） -->
+        <div class="card section-card">
+            <div class="card-header">
+                <h5 class="card-title">季度绿化重点项目进展（2025Q2）</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="project-item">
+                            <h6 class="fw-bold">青岛黄岛区新增绿地项目</h6>
+                            <p class="mb-1">目标：新增绿地2.5万㎡</p>
+                            <p class="mb-0">进度：78%（已完成1.95万㎡，以道路绿地为主）</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="project-item">
+                            <h6 class="fw-bold">泰安泰山椴保护项目（文档3.8）</h6>
+                            <p class="mb-1">目标：完成35棵泰山椴土壤改良</p>
+                            <p class="mb-0">进度：100%（2025-04已完成，下次养护7月）</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="project-item">
+                            <h6 class="fw-bold">济南历城区病虫害防治（文档3.7）</h6>
+                            <p class="mb-1">目标：处置32棵灯台树猝倒病</p>
+                            <p class="mb-0">进度：68%（已处置22棵，采用0.1%敌克松喷洒）</p>
+                        </div>
+                    </div>
+                </div>
+                <p class="data-interpret">
+                    数据来源：项目进度=无人机月度巡检数据+政企养护记录；处置方案=基于图像识别和专家系统的智能诊断（如灯台树猝倒病采用0.1%敌克松喷洒或2%-3%硫酸亚铁浇灌）（文档3.7）。
+                </p>
+
+                <!-- 新增：项目阶段时间线（文档6.1项目发展战略） -->
+                <div class="project-timeline">
+                    <div class="timeline-line"></div>
+                    
+                    <div class="timeline-node">
+                        <div class="node-dot node-dot-current"></div>
+                        <div class="node-header">
+                            <div class="node-year">2025年（推广期）</div>
+                            <div class="node-status status-current">当前阶段</div>
+                        </div>
+                        <div class="node-content">
+                            青岛试点落地（已完成）——完成6所高校绿化检测，建立泰山椴数据库（35棵），无人机巡检覆盖率100%，3D-CNN模型识别准确率92%（文档6.1）
+                        </div>
+                        <div class="node-tech">技术亮点：无人机+多光谱摄像头采集，双时相遥感每周巡检（文档3.2.1）</div>
+                    </div>
+                    
+                    <div class="timeline-node">
+                        <div class="node-dot node-dot-next"></div>
+                        <div class="node-header">
+                            <div class="node-year">2026年（成长期）</div>
+                            <div class="node-status">规划阶段</div>
+                        </div>
+                        <div class="node-content">
+                            山东全省推广——新增泰安、淄博等5个城市服务，开发第二代3D-CNN模型（准确率提升至95%），完成山东特有树种全量统计（文档6.1）
+                        </div>
+                        <div class="node-tech">技术亮点：双时相遥感检测频率提升至3天/次，新增激光雷达数据融合（文档3.3）</div>
+                    </div>
+                    
+                    <div class="timeline-node">
+                        <div class="node-dot node-dot-future"></div>
+                        <div class="node-header">
+                            <div class="node-year">2027年（成熟期）</div>
+                            <div class="node-status status-future">远期规划</div>
+                        </div>
+                        <div class="node-content">
+                            全国拓展——覆盖北京、上海等10个一二线城市，对接国家园林城市评估系统，建立全国古树名木监测网络（文档6.1）
+                        </div>
+                        <div class="node-tech">技术亮点：多源数据融合升级，支持全国尺度绿化变化趋势预测（文档3.3）</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 政企专属区 - 精细化数据看板（修复显示控制） -->
+        <div class="card section-card gov-only" id="govDataBoard">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">政企精细化数据看板 <span class="gov-feature-badge">政企专属</span></h5>
+            </div>
+            <div class="card-body">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">按绿地类型拆分（2025Q2）</h6>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="exportDropdown">
+                                    导出数据
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="exportDropdown">
+                                    <li><a class="dropdown-item" href="#">Excel（基础统计）</a></li>
+                                    <li><a class="dropdown-item" href="#">PDF（含图表报告）</a></li>
+                                    <li><a class="dropdown-item" href="#">CSV（GIS兼容）</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="greenTypeChart" class="chart-container" style="height: 300px;"></div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">病虫害高发植物TOP5（文档3.7）</h6>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>植物种类</th>
+                                            <th>病虫害数量</th>
+                                            <th>主要病因</th>
+                                            <th>处置率</th>
+                                            <th>处置方案（文档推荐）</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>灯台树</td>
+                                            <td>32棵</td>
+                                            <td>猝倒病</td>
+                                            <td>68%</td>
+                                            <td>0.1%敌克松喷洒/2%-3%硫酸亚铁浇灌</td>
+                                        </tr>
+                                        <tr>
+                                            <td>马尾松</td>
+                                            <td>25棵</td>
+                                            <td>松材线虫病</td>
+                                            <td>72%</td>
+                                            <td>松褐天牛防治+药剂注射</td>
+                                        </tr>
+                                        <tr>
+                                            <td>柳杉</td>
+                                            <td>18棵</td>
+                                            <td>叶枯病</td>
+                                            <td>85%</td>
+                                            <td>多菌灵可湿性粉剂喷雾</td>
+                                        </tr>
+                                        <tr>
+                                            <td>杜鹃</td>
+                                            <td>15棵</td>
+                                            <td>根腐病</td>
+                                            <td>92%</td>
+                                            <td>恶霉灵灌根+改善排水</td>
+                                        </tr>
+                                        <tr>
+                                            <td>梨树</td>
+                                            <td>12棵</td>
+                                            <td>梨黑星病</td>
+                                            <td>88%</td>
+                                            <td>代森锰锌可湿性粉剂喷雾</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">珍稀植物分布（山东特有-文档3.8）</h6>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>植物种类</th>
+                                            <th>数量</th>
+                                            <th>主要分布区</th>
+                                            <th>养护周期</th>
+                                            <th>致危因素（文档分析）</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>泰山椴</td>
+                                            <td>35棵</td>
+                                            <td>泰安泰山、青岛黄岛</td>
+                                            <td>每季度1次</td>
+                                            <td>旅游开发生境破坏、幼树放牧干扰</td>
+                                        </tr>
+                                        <tr>
+                                            <td>山东桦木</td>
+                                            <td>22棵</td>
+                                            <td>淄博沂源、潍坊临朐</td>
+                                            <td>每半年1次</td>
+                                            <td>森林抚育人为干扰</td>
+                                        </tr>
+                                        <tr>
+                                            <td>胶东卫矛</td>
+                                            <td>18棵</td>
+                                            <td>烟台牟平、威海荣成</td>
+                                            <td>每季度1次</td>
+                                            <td>城市化进程挤占生境</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning" role="alert">
+                    <h6 class="alert-heading fw-bold">3D-CNN模型预警（文档8.2风险控制）</h6>
+                    <p>青岛黄岛区（旅游热点区域）近1个月树木枯萎率上升4.8%，基于"双时相遥感图像变化检测"分析，推测受旅游开发人为干扰影响，建议优先排查幼树生长状态，加强放牧管控。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 政企专属区 - 预算与绩效分析（文档7.1-7.2财务数据） -->
+        <div class="card section-card gov-only" id="govBudgetBoard">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">预算与绩效分析 <span class="gov-feature-badge">政企专属</span></h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-stretch gap-4 flex-wrap" style="width:100%;">
+                    <div style="flex:1 1 0; min-width:320px; max-width:48%;">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">2025年度绿化预算执行情况（含初期投入）</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="budgetChart" class="chart-container" style="height: 250px;"></div>
+                                <p class="data-interpret mt-2">
+                                    <span style="color:#FF7D00;font-weight:600;">Q1初期投入明细：</span> 1月初期投入10万元，含 <span style="color:#165DFF;">无人机设备1万</span>、<span style="color:#00B96B;">办公用品1.8万</span>、<span style="color:#F53F3F;">技术开发5万</span>。<br>
+                                    ① 橙色柱状=项目初期固定投入；② 蓝色线=预算金额（Q1含政府/学校扶持5万，Q2含企业支持10万）；③ 绿色线=实际支出（贴合初期投入规划，1月支出10万用于设备采购）。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="flex:1 1 0; min-width:320px; max-width:48%;">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">项目融资资金来源占比（文档7.2）</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="fundSourceChart" class="chart-container" style="height: 250px;"></div>
+                                <p class="data-interpret mt-2">
+                                    <span style="color:#FF7D00;font-weight:600;">资金用途说明：</span> 总融资50万元，其中 <span style="color:#165DFF;">团队投资25万</span>（技术开发5万+办公设备18万）、<span style="color:#00B96B;">企业支持12.5万</span>（无人机设备升级）、<span style="color:#F53F3F;">政府/学校扶持6.25万</span>（数据采集补贴）、银行贷款6.25万。各项资金均有明确业务价值（文档7.2）。
+                                </p>
+            <!-- 智能体风险预警条（文档8.2） -->
+            <div class="alert alert-danger mb-3" style="font-size:1.08rem;font-weight:600;border-left:6px solid #F53F3F;">
+                【智能体预警】青岛黄岛区泰山椴生长环境土壤湿度低于阈值（15%），建议3日内灌溉；杨树识别准确率降至88%，已触发模型增量训练，6小时后恢复至95%
+            </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">各区绿化绩效对比</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>区域</th>
+                                    <th>绿化覆盖率</th>
+                                    <th>年度增长</th>
+                                    <th>绩效评分</th>
+                                    <th>无人机巡检频次（文档推荐）</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>青岛黄岛区</td>
+                                    <td>42.5%</td>
+                                    <td>+2.3%</td>
+                                    <td>92</td>
+                                    <td>每周2次（含泰山椴重点区）</td>
+                                </tr>
+                                <tr>
+                                    <td>泰安泰山区</td>
+                                    <td>48.2%</td>
+                                    <td>+1.8%</td>
+                                    <td>88</td>
+                                    <td>每周1次（泰山景区专项）</td>
+                                </tr>
+                                <tr>
+                                    <td>济南历城区</td>
+                                    <td>41.3%</td>
+                                    <td>+1.5%</td>
+                                    <td>85</td>
+                                    <td>每周1次</td>
+                                </tr>
+                                <tr>
+                                    <td>淄博沂源县</td>
+                                    <td>38.7%</td>
+                                    <td>+2.1%</td>
+                                    <td>90</td>
+                                    <td>每两周1次</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 绿化问题反馈 -->
+        <div class="card section-card">
+            <div class="card-header">
+                <h5 class="card-title">绿化问题反馈</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <form id="feedbackForm">
+                            <div class="mb-3">
+                                <label class="form-label">问题类型</label>
+                                <select class="form-select" required>
+                                    <option value="">请选择问题类型</option>
+                                    <option value="disease">植物病虫害</option>
+                                    <option value="fall">植物倾斜/倒伏</option>
+                                    <option value="damage">人为破坏绿化</option>
+                                    <option value="other">其他问题</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">关联植物种类（可选）</label>
+                                <select class="form-select">
+                                    <option value="">选择植物种类</option>
+                                    <option value="泰山椴">泰山椴（山东特有）</option>
+                                    <option value="灯台树">灯台树（病虫害高发）</option>
+                                    <option value="马尾松">马尾松</option>
+                                    <option value="其他">其他</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">问题位置</label>
+                                <input type="text" class="form-control" placeholder="如：青岛黄岛金沙滩公园" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">问题描述</label>
+                                <textarea class="form-control" rows="3" placeholder="请详细描述问题情况" required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">上传照片（可选）</label>
+                                <input type="file" class="form-control" accept="image/*">
+                            </div>
+                            <button type="submit" class="btn btn-primary">提交反馈</button>
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">反馈进度查询</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <input type="text" class="form-control" id="feedbackNo" placeholder="输入反馈单号（示例：FK202505001）">
+                                </div>
+                                <button class="btn btn-outline-primary w-100 mb-3" id="queryFeedback">查询进度</button>
+                                
+                                <div id="feedbackResult" class="d-none">
+                                    <div class="card bg-light p-3 mb-3">
+                                        <h6 class="fw-bold">反馈单号：FK202505001</h6>
+                                        <p class="mb-1"><strong>问题类型</strong>：植物病虫害（灯台树猝倒病）</p>
+                                        <p class="mb-1"><strong>位置</strong>：青岛市南区中山公园西侧</p>
+                                        <p class="mb-1"><strong>提交时间</strong>：2025-05-01 14:30</p>
+                                        <p class="mb-1"><strong>当前进度</strong>：<span class="text-primary">已派单至养护队，预计2日内处理（处置方案：0.1%敌克松喷洒）</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 绿化知识问答（基于文档内容） -->
+        <div class="card section-card">
+            <div class="card-header">
+                <h5 class="card-title">绿化知识问答</h5>
+            </div>
+            <div class="card-body">
+                <div class="faq-item">
+                    <h6 class="fw-bold"><i class="bi bi-chevron-right text-primary"></i> 无人机如何识别泰山椴这种特有树种？</h6>
+                    <div class="faq-answer">
+                        采用"3D-CNN深度学习模型"：无人机航拍获取高分辨率叶片纹理、树冠结构图像，模型通过学习泰山椴"卵形叶片、灰白色树皮"等独特特征，结合多光谱数据（近红外波段反射率），精准区分泰山椴与其他树种，识别准确率达92%以上（文档3.3、3.8）。
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <h6 class="fw-bold"><i class="bi bi-chevron-right text-primary"></i> 为什么旅游区的古树更容易受威胁？</h6>
+                    <div class="faq-answer">
+                        旅游热点地区（如泰安泰山、青岛黄岛）的古树，易因游客踩踏导致土壤板结、根系受损；旅游开发中的基建工程可能破坏古树生境；同时，游客丢弃的垃圾可能引发病虫害滋生，影响古树健康（如泰山椴幼树易受放牧干扰）（文档3.8致危分析）。
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <h6 class="fw-bold"><i class="bi bi-chevron-right text-primary"></i> 项目的核心技术壁垒有哪些？</h6>
+                    <div class="faq-answer">
+                        1. 跨学科技术融合：整合无人机遥感、3D-CNN深度学习、多源数据融合技术（文档产品优势）；2. 专利技术支撑：双时相遥感图像变化检测方法（专利号CN 114494870 A）（文档图3-3）；3. 自主算法库：针对树种识别优化的3D-CNN模型，识别准确率92%+（文档3.3）；4. 数据优势：建立包含泰山椴等特有树种的树木数据库（文档3.8）。
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <h6 class="fw-bold"><i class="bi bi-chevron-right text-primary"></i> 无人机采集设备有哪些核心参数？</h6>
+                    <div class="faq-answer">
+                        项目采用的无人机采集设备核心参数（文档3.2.1）：① 飞行高度：50-100米；② 图像分辨率：0.1米/像素；③ 采集效率：单次飞行覆盖50km²，时间＜2小时；④ 传感器：RGB摄像头+多光谱传感器；⑤ 数据传输：实时回传至云端，支持离线存储备份，确保数据安全性和完整性。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 技术科普悬浮按钮 -->
+    <button class="btn btn-primary floating-tech-btn" data-bs-toggle="modal" data-bs-target="#techModal">
+        <i class="bi bi-cpu"></i>
+    </button>
+
+    <!-- 页脚 -->
+        <footer>
+            <div class="container text-center">
+                <p class="mb-1">智瞰绿城—智能体深度集成的无人机航拍城市绿化覆盖智能检测系统</p>
+                <p class="mb-0 small">数据来源：无人机航拍+3D-CNN识别+树木基本信息库（2025年9月更新） | 技术支持：ICD团队</p>
+            </div>
+        </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 初始化函数
+        $(document).ready(function() {
+            // FAQ区交互修正：每个问题只展开自己的内容
+            // 多FAQ区块交互修正：每个区块内的问题只影响本区块
+            $('.faq-item').each(function(idx, el) {
+                const $item = $(el);
+                $item.off('click').on('click', function(e) {
+                    const $faqBlock = $item.closest('.card-body');
+                    const $answers = $faqBlock.find('.faq-answer');
+                    const $answer = $item.find('.faq-answer');
+                    if ($answer.is(':visible')) {
+                        $answer.slideUp(180);
+                    } else {
+                        $answers.slideUp(180);
+                        $answer.slideDown(220);
+                    }
+                });
+            });
+            // 反馈表单智能联动与闭环提示
+            const $feedbackForm = $('#feedbackForm');
+            const $typeSelect = $feedbackForm.find('select').eq(0);
+            const $plantSelect = $feedbackForm.find('select').eq(1);
+            let $solutionTip = $('<div id="solutionTip" class="alert alert-info mt-2 d-none" style="font-size:1rem;"></div>');
+            $plantSelect.parent().append($solutionTip);
+
+            function updateSolutionTip() {
+                const type = $typeSelect.val();
+                const plant = $plantSelect.val();
+                if (type === 'disease' && plant === '灯台树') {
+                    $solutionTip.html('<strong>参考处置方案：</strong>幼苗出土后10-20天喷洒0.1%敌克松，或2%-3%硫酸亚铁浇灌（每平方米9L）').removeClass('d-none');
+                } else {
+                    $solutionTip.addClass('d-none');
+                }
+            }
+            $typeSelect.on('change', updateSolutionTip);
+            $plantSelect.on('change', updateSolutionTip);
+
+            $feedbackForm.on('submit', function(e) {
+                e.preventDefault();
+                // 模拟反馈单号
+                const feedbackNo = 'FK' + new Date().getTime().toString().slice(-6);
+                // 智能体提示弹窗
+                const msg = `<div style='font-size:1.08rem;'>
+                    <strong>智能体提示：</strong><br>
+                    已分配至 <span style='color:#165DFF;'>XX养护队</span>，预计 <span style='color:#00B96B;'>24小时内处理</span><br>
+                    可通过单号 <span style='color:#FF7D00;'>${feedbackNo}</span> 实时查看进度<br>
+                    处理完成后将推送验收照片至您的联系方式
+                </div>`;
+                if (window.bootstrap) {
+                    const toast = document.createElement('div');
+                    toast.className = 'toast align-items-center text-bg-primary border-0 show';
+                    toast.style.position = 'fixed';
+                    toast.style.top = '30px';
+                    toast.style.right = '30px';
+                    toast.style.zIndex = '9999';
+                    toast.innerHTML = `<div class='d-flex'><div class='toast-body'>${msg}</div><button type='button' class='btn-close btn-close-white me-2 m-auto' data-bs-dismiss='toast'></button></div>`;
+                    document.body.appendChild(toast);
+                    setTimeout(()=>toast.remove(), 6000);
+                } else {
+                    alert(msg.replace(/<[^>]+>/g, ''));
+                }
+                $feedbackForm[0].reset();
+                $solutionTip.addClass('d-none');
+            });
+            // 1. 修复：政企视角切换逻辑（明确DOM元素选择，增加状态控制）
+            const $publicRoleBtn = $('#publicRoleBtn');
+            const $govRoleBtn = $('#govRoleBtn');
+            const $govLoginBtn = $('#govLoginBtn');
+            const $govSections = $('.gov-only');
+            const $loginModal = $('#loginModal');
+            const $doLoginBtn = $('#doLogin');
+            const $govAccount = $('#govAccount');
+            const $govPwd = $('#govPwd');
+
+            // 视角切换点击事件
+            $publicRoleBtn.on('click', function() {
+                // 切换按钮样式
+                $publicRoleBtn.addClass('active bg-primary text-white').removeClass('btn-light');
+                $govRoleBtn.removeClass('active bg-primary text-white').addClass('btn-light');
+                // 隐藏政企登录按钮和政企专属内容
+                $govLoginBtn.hide();
+                $govSections.hide();
+                // 清除登录状态
+                localStorage.removeItem('govLoggedIn');
+            });
+
+            $govRoleBtn.on('click', function() {
+                // 切换按钮样式
+                $govRoleBtn.addClass('active bg-primary text-white').removeClass('btn-light');
+                $publicRoleBtn.removeClass('active bg-primary text-white').addClass('btn-light');
+                // 显示政企登录按钮
+                $govLoginBtn.show();
+                // 检查是否已登录，已登录则显示政企内容
+                if (localStorage.getItem('govLoggedIn') === 'true') {
+                    $govSections.show();
+                } else {
+                    // 未登录则打开登录模态框
+                    $loginModal.modal('show');
+                    $govSections.hide();
+                }
+            });
+
+            // 2. 修复：政企登录逻辑（明确登录成功后的状态控制）
+            $doLoginBtn.on('click', function() {
+                const account = $govAccount.val().trim();
+                const pwd = $govPwd.val().trim();
+                // 简化登录验证（实际项目需对接后端，此处基于文档默认密码）
+                if (account && pwd === '123456') {
+                    localStorage.setItem('govLoggedIn', 'true');
+                    $loginModal.modal('hide');
+                    // 显示所有政企专属内容
+                    $govSections.show();
+                    alert('登录成功！已切换至政企管理视角，可查看精细化数据与财务分析');
+                    // 清空输入框
+                    $govAccount.val('');
+                    $govPwd.val('');
+                } else {
+                    alert('账号不能为空，密码为默认密码：123456');
+                }
+            });
+
+            // 3. 植物标签点击事件
+            $('.plant-tag').click(function() {
+                const plantName = $(this).data('plant');
+                $('#queryInput').val(plantName);
+                $('#queryType').val('tree');
+                // 触发查询
+                performPlantQuery(plantName);
+            });
+
+            // 4. 树木查询逻辑
+            $('#treeQueryBtn').click(function() {
+                const queryType = $('#queryType').val();
+                const queryInput = $('#queryInput').val().trim();
+                if (queryInput) {
+                    performPlantQuery(queryInput, queryType);
+                } else {
+                    alert('请输入查询内容（如：泰山椴、青岛黄岛）');
+                }
+            });
+
+            // 5. 高级搜索逻辑
+            $('#doAdvancedSearch').click(function() {
+                const treeType = $('#advTreeType').val();
+                const area = $('#advArea').val();
+                const health = $('#advHealth').val();
+                const protection = $('#advProtection').val();
+                const minAge = $('#advMinAge').val();
+                const maxAge = $('#advMaxAge').val();
+
+                // 构建查询条件字符串
+                let conditions = [];
+                if (treeType) conditions.push(`植物种类：${treeType}`);
+                if (area) conditions.push(`区域：${area}`);
+                if (health) conditions.push(`健康状态：${health}`);
+                if (protection) conditions.push(`保护级别：${protection}`);
+                if (minAge) conditions.push(`最小树龄：${minAge}年`);
+                if (maxAge) conditions.push(`最大树龄：${maxAge}年`);
+
+                // 若没有任何条件，提示并返回
+                if (conditions.length === 0) {
+                    alert('请至少选择一项搜索条件');
+                    return;
+                }
+
+                // 简单构建结果（演示数据），实际项目应对接后端
+                const resultsHtml = `
+                    <div class="tree-card">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="fw-bold">高级搜索结果</h5>
+                                <p class="mb-1"><i class="bi bi-search"></i> 查询条件：${conditions.join('，')}</p>
+                                <p class="text-muted">注：以下为演示结果，实际数据请对接后端 API。</p>
+                            </div>
+                        </div>
+                        <hr />
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="tree-card">
+                                    <h6 class="fw-bold">示例植物：泰山椴</h6>
+                                    <p class="mb-1">位置：泰安泰山中天门</p>
+                                    <p class="mb-0">健康：健康（季度养护）</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="tree-card">
+                                    <h6 class="fw-bold">示例植物：灯台树</h6>
+                                    <p class="mb-1">位置：青岛黄岛大珠山</p>
+                                    <p class="mb-0">健康：中度病害（建议处置：0.1%敌克松喷洒）</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="tree-card">
+                                    <h6 class="fw-bold">示例植物：银杏</h6>
+                                    <p class="mb-1">位置：济南历城区</p>
+                                    <p class="mb-0">健康：良好</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+
+                // 关闭模态框并展示结果
+                $('#advancedSearchModal').modal('hide');
+                $('#treeQueryResult').html(resultsHtml).removeClass('d-none');
+            });
+
+            // 简易查询函数（演示）
+            function performPlantQuery(queryInput, queryType = 'tree') {
+                const resultHtml = `
+                    <div class="tree-card">
+                        <h5 class="fw-bold">查询结果：${queryInput}</h5>
+                        <p class="mb-1">类型：${queryType}</p>
+                        <p class="mb-1">示例位置：青岛黄岛 / 泰安 / 济南</p>
+                        <p class="mb-0">说明：此为本地静态演示结果，实际项目应通过 AJAX 请求后端接口获取真实数据。</p>
+                    </div>`;
+
+                $('#treeQueryResult').html(resultHtml).removeClass('d-none');
+            }
+
+            // FAQ 展开/收起
+            $('.faq-item').on('click', function() {
+                $(this).find('.faq-answer').first().slideToggle(200);
+            });
+
+            // 反馈表单提交（演示，本地阻止默认提交）
+            $('#feedbackForm').on('submit', function(e) {
+                e.preventDefault();
+                // 简单表单验证
+                const type = $(this).find('select').first().val();
+                const location = $(this).find('input[type=text]').first().val();
+                const desc = $(this).find('textarea').val();
+                if (!type || !location || !desc) {
+                    alert('请填写必填项');
+                    return;
+                }
+                // 模拟成功提交
+                alert('反馈提交成功，反馈单号：FK' + Date.now());
+                this.reset();
+            });
+
+            // 反馈进度查询（演示）
+            $('#queryFeedback').click(function() {
+                const no = $('#feedbackNo').val().trim();
+                if (!no) {
+                    alert('请输入反馈单号，例如：FK202505001');
+                    return;
+                }
+                $('#feedbackResult').removeClass('d-none');
+            });
+
+            // 扫描树木（占位）
+            $('#scanTreeBtn').click(function() {
+                alert('扫码功能为演示占位，实际需接入摄像头/扫码 SDK');
+            });
+
+            // 浮动按钮 - 科技弹窗（已通过 data-bs-* 配置自动处理）
+
+            // 初始化 ECharts 图表（示例数据）
+            function initCharts() {
+                try {
+                    // 覆盖率变化
+                    const coverageChart = echarts.init(document.getElementById('coverageChart'));
+                    coverageChart.setOption({
+                        tooltip: { trigger: 'axis' },
+                        xAxis: { type: 'category', data: ['2024-09','2024-12','2025-03','2025-06','2025-09'] },
+                        yAxis: { type: 'value', axisLabel: { formatter: '{value}%' } },
+                        series: [{ name: '覆盖率', type: 'line', data: [36.8, 37.2, 37.9, 38.2, 38.5], smooth: true, areaStyle: {} }]
+                    });
+
+                    // 树种占比
+                    const treeTypeChart = echarts.init(document.getElementById('treeTypeChart'));
+                    treeTypeChart.setOption({
+                        tooltip: { trigger: 'item' },
+                        legend: { orient: 'vertical', left: 'left' },
+                        series: [{ name: '树种占比', type: 'pie', radius: '60%', data:[{value:40, name:'阔叶树'},{value:30, name:'针叶树'},{value:15, name:'灌木'},{value:15, name:'其他'}]}]
+                    });
+
+                    // 政企 - 绿地类型（居中显示）
+                    const greenTypeChart = echarts.init(document.getElementById('greenTypeChart'));
+                    greenTypeChart.setOption({
+                        tooltip: { trigger: 'axis' },
+                        grid: { left: '8%', right: '8%', bottom: '10%', containLabel: true },
+                        xAxis: { type: 'category', data: ['公园','道路绿化','学校','单位'], axisLabel: { interval:0, rotate:0 } },
+                        yAxis: { type: 'value' },
+                        series: [{ type: 'bar', data: [12000, 8000, 5000, 3000], itemStyle: { color: '#165DFF' }, barWidth: '40%' }]
+                    });
+
+                    // 预算与资金来源
+                    const budgetChart = echarts.init(document.getElementById('budgetChart'));
+                    budgetChart.setOption({
+                        tooltip: { trigger: 'axis' },
+                        legend: { data: ['预算','实际支出'], left: 'center' },
+                        grid: { left: '6%', right: '6%', bottom: '10%', containLabel: true },
+                        xAxis: { type: 'category', data: ['Q1','Q2','Q3','Q4'] },
+                        yAxis: { type: 'value' },
+                        series: [{ name: '预算', type: 'line', data: [50, 60, 55, 70], smooth: true }, { name: '实际支出', type: 'bar', data: [45, 58, 52, 65], barWidth: '40%' }]
+                    });
+
+                    const fundSourceChart = echarts.init(document.getElementById('fundSourceChart'));
+                    fundSourceChart.setOption({
+                        tooltip: { trigger: 'item' },
+                        legend: { orient: 'horizontal', bottom: 0, left: 'center' },
+                        series: [{ type: 'pie', radius: ['35%','60%'], center: ['50%','45%'], data:[{value:50,name:'团队'},{value:25,name:'企业'},{value:12.5,name:'政府/学校'},{value:12.5,name:'银行贷款'}], label: { formatter: '{b}: {d}%' } }]
+                    });
+                } catch (err) {
+                    console.warn('图表初始化失败：', err);
+                }
+            }
+
+            // 初始化百度地图覆盖图并添加泰山椴示例标注
+            function initBaiduMapCoverage() {
+                try {
+                    if (typeof BMap === 'undefined') {
+                        console.warn('Baidu Map SDK 未加载，无法初始化地图。');
+                        return;
+                    }
+
+                    const map = new BMap.Map('baiduMapCoverage');
+                    const centerPoint = new BMap.Point(117.000, 36.400);
+                    map.centerAndZoom(centerPoint, 7);
+                    map.enableScrollWheelZoom(true);
+
+                    // 图层切换控件
+                    const mapTypeCtrl = new BMap.MapTypeControl({
+                        mapTypes: [
+                            BMAP_NORMAL_MAP,
+                            BMAP_SATELLITE_MAP
+                        ]
+                    });
+                    map.addControl(mapTypeCtrl);
+
+                    // 热力图数据（示例：绿化密度点）
+                    const heatData = [
+                        {lng:117.129, lat:36.239, count:80}, // 泰安
+                        {lng:120.100, lat:35.995, count:60}, // 青岛黄岛
+                        {lng:117.083, lat:36.682, count:50}, // 济南历城区
+                        {lng:118.000, lat:36.500, count:30}, // 其他示例点
+                        {lng:119.000, lat:36.800, count:40}
+                    ];
+
+                    // 加载热力图插件（需百度地图热力图库）
+                    function loadHeatmap() {
+                        if (!map.getOverlays().some(o => o instanceof BMapLib.HeatmapOverlay)) {
+                            const heatmapOverlay = new BMapLib.HeatmapOverlay({
+                                radius: 30,
+                                visible: true,
+                                gradient: {
+                                    0.2: 'blue',
+                                    0.5: 'lime',
+                                    0.8: 'red'
+                                }
+                            });
+                            map.addOverlay(heatmapOverlay);
+                            heatmapOverlay.setDataSet({data: heatData, max: 100});
+                        }
+                    }
+
+                    // 丰富分布点数据（不同树种、健康状态、图片等）
+                    const points = [
+                        { name: '泰山椴', coord: new BMap.Point(117.129, 36.239), species: '泰山椴', health: '健康', count: 35, img: 'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=300&q=80', desc: '泰安泰山核心区，季度养护' },
+                        { name: '灯台树', coord: new BMap.Point(120.100, 35.995), species: '灯台树', health: '中度病害', count: 12, img: 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=300&q=80', desc: '青岛黄岛大珠山，建议喷洒敌克松' },
+                        { name: '银杏', coord: new BMap.Point(117.083, 36.682), species: '银杏', health: '良好', count: 20, img: 'https://images.unsplash.com/photo-1444395143729-9c3b3c1a4cfa?auto=format&fit=crop&w=300&q=80', desc: '济南历城区，年度养护' },
+                        { name: '杜鹃', coord: new BMap.Point(118.000, 36.500), species: '杜鹃', health: '轻微病害', count: 8, img: 'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=300&q=80', desc: '潍坊，根腐病需灌根' },
+                        { name: '马尾松', coord: new BMap.Point(119.000, 36.800), species: '马尾松', health: '健康', count: 15, img: 'https://images.unsplash.com/photo-1465101178521-c1a4c8a0f8d9?auto=format&fit=crop&w=300&q=80', desc: '烟台，松材线虫病防治中' }
+                    ];
+                    points.forEach(p => {
+                        // 不同健康状态用不同颜色图标
+                        let iconUrl = 'https://api.map.baidu.com/images/marker_red.png';
+                        if (p.health === '健康') iconUrl = 'https://api.map.baidu.com/images/marker_green.png';
+                        if (p.health === '良好') iconUrl = 'https://api.map.baidu.com/images/marker_blue.png';
+                        if (p.health === '中度病害') iconUrl = 'https://api.map.baidu.com/images/marker_orange.png';
+                        if (p.health === '轻微病害') iconUrl = 'https://api.map.baidu.com/images/marker_yellow.png';
+                        const icon = new BMap.Icon(iconUrl, new BMap.Size(23, 25));
+                        const marker = new BMap.Marker(p.coord, {icon: icon});
+                        map.addOverlay(marker);
+                        const infoWindow = new BMap.InfoWindow(`
+                            <div style="font-size:15px;min-width:220px;">
+                                <strong>${p.name}</strong> <span style="font-size:13px;color:#888;">(${p.species})</span><br/>
+                                <img src="${p.img}" alt="${p.species}" style="width:100%;max-width:200px;border-radius:8px;margin:8px 0;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+                                <span><strong>健康状态：</strong> ${p.health}</span><br/>
+                                <span><strong>数量：</strong> ${p.count} 棵</span><br/>
+                                <span><strong>说明：</strong> ${p.desc}</span><br/>
+                                ${p.species === '泰山椴' ? `<div style='margin-top:8px;padding:8px;background:#e3f7e3;border-radius:6px;'>
+                                    <strong>分布：</strong> 泰安泰山、青岛黄岛<br/>
+                                    <strong>保护价值：</strong> 山东特有、科研+蜜源植物<br/>
+                                    <strong>致危因素：</strong> 旅游开发、放牧干扰<br/>
+                                    <strong>养护周期：</strong> 每季度1次
+                                </div>` : ''}
+                                ${p.species === '灯台树' ? `<div style='margin-top:8px;padding:8px;background:#fffbe6;border-radius:6px;'>
+                                    <strong>病虫害高发类型：</strong> 猝倒病<br/>
+                                    <strong>推荐处置：</strong> 0.1%敌克松喷洒
+                                </div>` : ''}
+                                ${p.species === '马尾松' ? `<div style='margin-top:8px;padding:8px;background:#fffbe6;border-radius:6px;'>
+                                    <strong>病虫害高发类型：</strong> 松材线虫病<br/>
+                                    <strong>推荐处置：</strong> 松褐天牛防治
+                                </div>` : ''}
+                            </div>
+                        `);
+                        marker.addEventListener('click', function() {
+                            this.openInfoWindow(infoWindow);
+                        });
+                    });
+
+                    // 热力图开关控件
+                    const heatBtn = document.createElement('button');
+                    heatBtn.innerText = '切换热力图';
+                    heatBtn.style.position = 'absolute';
+                    heatBtn.style.top = '16px';
+                    heatBtn.style.right = '16px';
+                    heatBtn.style.zIndex = '999';
+                    heatBtn.style.background = '#165DFF';
+                    heatBtn.style.color = '#fff';
+                    heatBtn.style.border = 'none';
+                    heatBtn.style.borderRadius = '6px';
+                    heatBtn.style.padding = '6px 16px';
+                    heatBtn.style.cursor = 'pointer';
+                    document.getElementById('baiduMapCoverage').appendChild(heatBtn);
+
+                    let heatmapVisible = false;
+                    let heatmapOverlay = null;
+                    heatBtn.onclick = function() {
+                        if (!heatmapVisible) {
+                            if (!heatmapOverlay) {
+                                heatmapOverlay = new BMapLib.HeatmapOverlay({
+                                    radius: 30,
+                                    visible: true,
+                                    gradient: {
+                                        0.2: 'blue',
+                                        0.5: 'lime',
+                                        0.8: 'red'
+                                    }
+                                });
+                                map.addOverlay(heatmapOverlay);
+                                heatmapOverlay.setDataSet({data: heatData, max: 100});
+                            } else {
+                                heatmapOverlay.show();
+                            }
+                            heatBtn.innerText = '关闭热力图';
+                        } else {
+                            if (heatmapOverlay) heatmapOverlay.hide();
+                            heatBtn.innerText = '切换热力图';
+                        }
+                        heatmapVisible = !heatmapVisible;
+                    };
+
+                    // 默认不显示热力图
+
+                } catch (err) {
+                    console.warn('初始化百度地图失败：', err);
+                }
+            }
+
+            // 初始化古树名木分布地图（示例标注）
+            function initBaiduMapAncient() {
+                try {
+                    if (typeof BMap === 'undefined') {
+                        console.warn('Baidu Map SDK 未加载，无法初始化古树地图。');
+                        return;
+                    }
+
+                    const map = new BMap.Map('baiduMapAncient');
+                    const centerPoint = new BMap.Point(117.000, 36.400);
+                    map.centerAndZoom(centerPoint, 7);
+                    map.enableScrollWheelZoom(true);
+
+                    // 示例古树数据，使用不同图标颜色表示类别
+                    const ancient = [
+                        { name: '泰山椴（示例）', coord: new BMap.Point(117.129, 36.239), count: 35, color: 'red' },
+                        { name: '山东桦木（示例）', coord: new BMap.Point(117.533, 36.860), count: 22, color: 'orange' },
+                        { name: '胶东卫矛（示例）', coord: new BMap.Point(120.080, 37.450), count: 18, color: 'blue' }
+                    ];
+
+                    ancient.forEach(a => {
+                        const icon = new BMap.Icon(`https://api.map.baidu.com/images/marker_red.png`, new BMap.Size(23, 25));
+                        const marker = new BMap.Marker(a.coord, {icon: icon});
+                        map.addOverlay(marker);
+                        const info = `<div style="font-size:14px;"><strong>${a.name}</strong><br/>数量：${a.count}棵</div>`;
+                        marker.addEventListener('click', function() {
+                            this.openInfoWindow(new BMap.InfoWindow(info));
+                        });
+                    });
+
+                } catch (err) {
+                    console.warn('初始化古树地图失败：', err);
+                }
+            }
+
+            // 延迟初始化图表以确保容器已渲染
+            initCharts();
+
+            // 当窗口大小变化时调整图表
+            $(window).on('resize', function() {
+                try { echarts.getInstanceByDom(document.getElementById('coverageChart'))?.resize(); } catch(e) {}
+                try { echarts.getInstanceByDom(document.getElementById('treeTypeChart'))?.resize(); } catch(e) {}
+                try { echarts.getInstanceByDom(document.getElementById('greenTypeChart'))?.resize(); } catch(e) {}
+                try { echarts.getInstanceByDom(document.getElementById('budgetChart'))?.resize(); } catch(e) {}
+                try { echarts.getInstanceByDom(document.getElementById('fundSourceChart'))?.resize(); } catch(e) {}
+            });
+
+            // 页面初始视角 - 公众
+            $publicRoleBtn.trigger('click');
+            // 初始化百度地图覆盖图
+            initBaiduMapCoverage();
+            // 初始化古树名木分布地图
+            initBaiduMapAncient();
+        });
+    </script>
+    </body>
+    </html>
